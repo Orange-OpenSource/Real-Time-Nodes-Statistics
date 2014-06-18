@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from __future__ import print_function
 import tornado.httpserver
 import tornado.web
@@ -11,13 +13,10 @@ import redis
 c = tornadoredis.Client()
 c.connect()
 
-class MainHandlerOld(tornado.web.RequestHandler):
-    def get(self):
-        self.render("template_v2.html", title="Redis PubSub + WebSocket Demo")
-        
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("template.html", title="Redis PubSub + WebSocket Demo")
+        url = "ws://%s:8888/ws" % "127.0.0.1"
+        self.render("template.html", ws_server_url=url)
         
 class JSHandler(tornado.web.RequestHandler):
     def get(self):
@@ -84,7 +83,6 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
 
 application = tornado.web.Application([
     (r'/', MainHandler),
-    (r'/old', MainHandlerOld),
     (r'/js/canvasjs.min.js', JSHandler),
     (r'/ws', MessageHandler),
 ])

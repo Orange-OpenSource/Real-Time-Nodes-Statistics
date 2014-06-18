@@ -3,22 +3,25 @@
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
-    <title>{{ title }}</title>
+    <title>Real Time Node Supervision</title>
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
 	<script type="text/javascript">
 	window.onload = function () {
+
+		// WS Server url
+		var ws_server_url = "{{ ws_server_url }}"
 
         // Chart max points
         var chartSize = 150;
         
 		// dataPoints
         var dataPoints = {};
-        dataPoints["directStats"] = {}
-        dataPoints["directStats"]["cpu"] = {};
-        dataPoints["directStats"]["cpu"]["0"] = { 'name' : 'CPU 0', 'values' : [] };
-        dataPoints["directStats"]["cpu"]["1"] = { 'name' : 'CPU 1', 'values' : [] };
-        dataPoints["directStats"]["mem"] = {};
-        dataPoints["directStats"]["mem"]["used"] = { 'name' : 'MEM', 'values' : [] };
+        dataPoints["l-marvin"] = {}
+        dataPoints["l-marvin"]["cpu"] = {};
+        dataPoints["l-marvin"]["cpu"]["0"] = { 'name' : 'CPU 0', 'values' : [] };
+        dataPoints["l-marvin"]["cpu"]["1"] = { 'name' : 'CPU 1', 'values' : [] };
+        dataPoints["l-marvin"]["mem"] = {};
+        dataPoints["l-marvin"]["mem"]["used"] = { 'name' : 'MEM', 'values' : [] };
 
         
 		var chart = [];
@@ -85,7 +88,7 @@
                 document.body.appendChild(el);
             }
             
-            var ws = new WebSocket("ws://172.20.154.80:8888/ws");
+            var ws = new WebSocket(ws_server_url);
             ws.onopen = function() {
                 show_message('Connected.');
                 for (var k in dataPoints){
@@ -132,7 +135,7 @@
 	<script type="text/javascript" src="/js/canvasjs.min.js"></script>
 </head>
 <body>
-    <h1>{{ title }}</h1>
+    <h1>Real Time Node Supervision</h1>
 	<div id="chartContainer"></div>
     <h2>Messages</h2>
     <hr/>
