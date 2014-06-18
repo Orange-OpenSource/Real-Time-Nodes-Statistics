@@ -16,14 +16,13 @@
         
 		// dataPoints
         var dataPoints = {};
-        dataPoints["l-marvin"] = {}
-        dataPoints["l-marvin"]["cpu"] = {};
-        dataPoints["l-marvin"]["cpu"]["0"] = { 'name' : 'CPU 0', 'values' : [] };
-        dataPoints["l-marvin"]["cpu"]["1"] = { 'name' : 'CPU 1', 'values' : [] };
-        dataPoints["l-marvin"]["mem"] = {};
-        dataPoints["l-marvin"]["mem"]["used"] = { 'name' : 'MEM', 'values' : [] };
+        //dataPoints["l-marvin"] = {}
+        //dataPoints["l-marvin"]["cpu"] = {};
+        //dataPoints["l-marvin"]["cpu"]["0"] = { 'name' : 'CPU 0', 'values' : [] };
+        //dataPoints["l-marvin"]["cpu"]["1"] = { 'name' : 'CPU 1', 'values' : [] };
+        //dataPoints["l-marvin"]["mem"] = {};
+        //dataPoints["l-marvin"]["mem"]["used"] = { 'name' : 'MEM', 'values' : [] };
 
-        
 		var chart = [];
         var chartData = [];
         
@@ -91,10 +90,10 @@
             var ws = new WebSocket(ws_server_url);
             ws.onopen = function() {
                 show_message('Connected.');
-                for (var k in dataPoints){
+                for (var node in dataPoints){
                     for (var nodechart in dataPoints[node]){
                         for (var stat in dataPoints[node][nodechart]){
-                            console.log({subscribe: node+"_"+nodechart+"_"+stat})
+                            console.log("subscribe: "+node+"_"+nodechart+"_"+stat)
                             ws.send(JSON.stringify({subscribe: node+"_"+nodechart+"_"+stat}));
                         }
                     }

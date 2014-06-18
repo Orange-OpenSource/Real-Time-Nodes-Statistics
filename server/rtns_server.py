@@ -31,8 +31,8 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
     def listen(self):
         self.client_pubsub = tornadoredis.Client()
         self.client_read = redis.Redis()
+        self.client_read.config_set('notify-keyspace-events','KA')
         self.client_pubsub.connect()
-        self.client_pubsub.execute_command('CONFIG SET','notify-keyspace-events','KA',callback=None)
         yield tornado.gen.Task(self.client_pubsub.psubscribe, '__key*__:nodes_list')
         self.client_pubsub.listen(self.on_message)
 
