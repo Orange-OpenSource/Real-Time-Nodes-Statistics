@@ -1,12 +1,21 @@
+#!/usr/bin/python
+
 import psutil
-import redis
+import redis 
 import socket
 import time
+import sys
 
 hostname = socket.gethostname()+"_"
 history = 60;
 
-r = redis.Redis("172.20.154.80")
+if len(sys.argv)==2:
+	rtns_ip = sys.argv[1]
+else:
+	print "Usage: ./rtns-agent-redis.py RTNS_SERVER_IP\n"
+	raise SystemExit
+
+r = redis.Redis(rtns_ip)
 
 r.sadd('nodes_list',hostname)
 
