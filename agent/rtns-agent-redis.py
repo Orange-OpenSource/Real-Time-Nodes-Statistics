@@ -5,6 +5,8 @@ import redis
 import socket
 import time
 import sys
+import signal
+
 
 sending_interval = 1 #in second
 history = 60
@@ -15,7 +17,7 @@ send_net = 1
 ##
 # Prepare hostname
 ##
-hostname = socket.gethostname()+"_"
+hostname = socket.gethostname()
 
 ##
 # Check argument and connect to REDIS
@@ -31,7 +33,7 @@ r = redis.Redis(rtns_ip)
 ##
 # Register in nodes_list
 ##
-print "Add '%s' in nodes_list\n" % socket.gethostname()
+print "Add '%s' in nodes_list\n" % hostname
 r.sadd('nodes_list',hostname)
 print "Data to send:\n"
 
@@ -49,14 +51,14 @@ def redPush( key, val):
 if send_cpu:
     cpu_i = 0
     for cpu in psutil.cpu_percent(percpu=True):
-        print hostname+"cpu_"+str(cpu_i)
+        print hostname+"_cpu_"+str(cpu_i)
         cpu_i += 1
 
 def get_send_cpu_or_sleep():
     if send_cpu:
         cpu_i = 0
         for cpu in psutil.cpu_percent(interval=sending_interval,percpu=True):
-            redPush( hostname+"cpu_"+str(cpu_i),t+"/"+str(cpu))
+            redPush( hostname+"_cpu_"+str(cpu_i),t+"/"+str(cpu))
             cpu_i += 1
     else:
         time.sleep(sending_interval)
@@ -67,15 +69,15 @@ if send_mem:
 
 def get_send_mem():
     if send_mem:
-        redPush( hostname+"mem_used",t+"/"+str(psutil.virtual_memory().percent))
+        redPush( hostname+"_mem_used",t+"/"+str(psutil.virtual_memory().percent))
 
 # Send Net data
 if send_net:
     nic_old= {}
     net_stats = psutil.net_io_counters(pernic=True)
     for nic in net_stats.keys():
-        print hostname+"nic_"+str(nic)+'-bytes-send'
-        print hostname+"nic_"+str(nic)+'-bytes-recv'
+        print hostname+"_nic_"+str(nic)+'-bytes-send'
+        print hostname+"_nic_"+str(nic)+'-bytes-recv'
         nic_old[nic+"_sent"]=net_stats[nic].bytes_sent
         nic_old[nic+"_recv"]=net_stats[nic].bytes_recv
 
@@ -83,10 +85,19 @@ def get_send_net():
     if send_net:    
         net_stats = psutil.net_io_counters(pernic=True)
         for nic in net_stats.keys():
-            redPush( hostname+"nic_"+str(nic)+'-bytes-send',t+"/"+str(net_stats[nic].bytes_sent-nic_old[nic+"_sent"]))
-            redPush( hostname+"nic_"+str(nic)+'-bytes-recv',t+"/"+str(net_stats[nic].bytes_recv-nic_old[nic+"_recv"]))
+            redPush( hostname+"_nic_"+str(nic)+'-bytes-send',t+"/"+str(net_stats[nic].bytes_sent-nic_old[nic+"_sent"]))
+            redPush( hostname+"_nic_"+str(nic)+'-bytes-recv',t+"/"+str(net_stats[nic].bytes_recv-nic_old[nic+"_recv"]))
             nic_old[nic+"_sent"]=net_stats[nic].bytes_sent
             nic_old[nic+"_recv"]=net_stats[nic].bytes_recv
+
+# Catch CTRL+C
+def signal_handler(signal, frame):
+        print("\nUnregister to nodes_list")
+        r.srem('nodes_list',hostname)
+        sys.exit(0)
+signal.signal(signal.SIGINT, signal_handler)
+print('\nPress Ctrl+C to exit')
+signal.pause()
 
 ##
 # Sending loop

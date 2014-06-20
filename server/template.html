@@ -2,9 +2,11 @@
 <html>
 
 <head>
+	<link rel="stylesheet" type="text/css" href="/static/rtns.css" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
     <title>Real Time Node Supervision</title>
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//notifyjs.com/dist/notify-combined.min.js"></script>
 	<script type="text/javascript">
 	window.onload = function () {
 
@@ -80,6 +82,7 @@
         
         open_websocket();
 
+		var ws;
         function open_websocket(){
             function show_message(message){
                 var el = document.createElement('div');
@@ -87,7 +90,7 @@
                 document.body.appendChild(el);
             }
             
-            var ws = new WebSocket(ws_server_url);
+            ws = new WebSocket(ws_server_url);
             ws.onopen = function() {
                 show_message('Connected.');
                 for (var node in dataPoints){
@@ -104,6 +107,26 @@
                 //~ We got a message
                 if(wsmsg._msg){
                     show_message(wsmsg._msg);
+                //~ We got a nodes list
+                }else if(wsmsg._nodes_list){
+                    console.log("The actual nodes list is: "+wsmsg._nodes_list);
+                    for ( nodeId in wsmsg._nodes_list ){
+						addNode(wsmsg._nodes_list[nodeId]);
+					}
+                //~ We got a stats list for a node
+                }else if(wsmsg._nodes_stats){
+					for ( var node in wsmsg._nodes_stats){
+						for ( var stat in wsmsg._nodes_stats[node]){
+							console.log(wsmsg._nodes_stats[node][stat]);
+						}
+					}
+                //~ We got a node added
+                }else if(wsmsg._nodes_add){
+					$.notify("Node "+node+" is added", "info");
+					addNode(wsmsg._nodes_add);
+                //~ We got a nodes remove
+                }else if(wsmsg._nodes_rem){
+					$.notify("Node "+wsmsg._nodes_rem+" is removed", "info");
                 //~ We got a new value
                 }else{
                     key = Object.keys(wsmsg)[0];
@@ -124,17 +147,52 @@
             };
         }
         
+        function askNodeStats(node){
+			console.log('ask stats for node: '+node);
+			ws.send(JSON.stringify({listStats: node}));
+		}
+        
+        function addNode ( node ){
+            $( "#nodesList" ).append( 	'<div id="nodeList-'+node+'" class="node">'+node+"</div>" );
+			$('#nodeList-'+node).click(function(){
+					if(dataPoints[node] === undefined){
+						addChartNode(node);
+						dataPoints[node] = {};
+						askNodeStats(node);
+						$('#nodeList-'+node).css('font-weight', 'bold');
+						$.notify("Node "+node+" added to supervision", "info");
+					}else{
+						removeChartNode(node);
+						delete dataPoints[node];
+						$('#nodeList-'+node).css('font-weight', 'normal');
+						$.notify("Node "+node+" remove from supervision", "info");
+					}
+				});
+			}
+        
         function addChartNode ( node ){
-            $( "#chartContainer" ).append( '<div id="chartContainer-'+node+'" style="height: 300px; width: 100%; display:inline-block;"></div>' );}
+            $( "#chartContainer" ).append( 	'<div id="chartTopContainer-'+node+'">'+
+												'<h2>'+node+'</h2>'+
+												'<div id="chartStats-'+node+'"></div>'+
+												'<div id="chartContainer-'+node+'" style="height: 300px; width: 100%; display:inline-block;"></div>'+
+											'</div>'
+											);}
+        
+        function removeChartNode ( node ){
+            $( "#chartTopContainer-"+node ).remove();}
         
         function addChartInNode ( node, chart ){
             $( "#chartContainer-"+node ).append( '<div id="chartContainer-'+node+'-'+chart+'" style="height: 300px; width: 50%; display:inline-block;"></div>' );}
+            
+        
 	}
 	</script>
-	<script type="text/javascript" src="/js/canvasjs.min.js"></script>
 </head>
 <body>
     <h1>Real Time Node Supervision</h1>
+	<div id="nodesList">
+		<div id="nodesListButton">&gt;</div>
+		</div>
 	<div id="chartContainer"></div>
     <h2>Messages</h2>
     <hr/>

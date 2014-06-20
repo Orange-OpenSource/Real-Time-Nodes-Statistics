@@ -1,0 +1,42 @@
+.node {
+	background-color: lightgray; 
+	width: 90%;
+	margin: 5px;
+	padding: 5px;
+    -moz-border-radius: 5px ;
+	border-radius: 5px;
+}
+.node a {
+    text-decoration: none;
+	color: #222222;
+}
+
+body{
+	background-color: white; 
+}
+
+#nodesList{
+	color: white;
+    background-color: #111111;
+    float: right;
+    height: 100%;
+    padding: 20px 5px 5px 5px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 200px;
+} 
+#nodesListButton{
+	color: white;
+    background-color: #222222;
+    float: right;
+    padding: 5px 10px 5px 10px;
+    position: absolute;
+    right: 200px;
+    top: 50px;
+    width: 30px;
+    height: 40px;
+    -moz-border-radius: 10px 0px 0px 10px;
+	border-radius: 10px 0px 0px 10px;
+    }
+    

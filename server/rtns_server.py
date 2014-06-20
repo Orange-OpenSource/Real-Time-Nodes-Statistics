@@ -17,11 +17,7 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         url = "ws://%s:8888/ws" % "127.0.0.1"
         self.render("template.html", ws_server_url=url)
-        
-class JSHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.render("canvasjs.min.js")
-
+           
 class MessageHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super(MessageHandler, self).__init__(*args, **kwargs)
@@ -30,11 +26,13 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
     @tornado.gen.engine
     def listen(self):
         self.client_pubsub = tornadoredis.Client()
-        self.client_read = redis.Redis()
-        self.client_read.config_set('notify-keyspace-events','KA')
+        self.client_classic = redis.Redis()
+        self.client_classic.config_set('notify-keyspace-events','KA')
         self.client_pubsub.connect()
         yield tornado.gen.Task(self.client_pubsub.psubscribe, '__key*__:nodes_list')
         self.client_pubsub.listen(self.on_message)
+        self.nodes_list = self.client_classic.smembers('nodes_list')
+        self.send_nodes_list(self.nodes_list)
 
     @tornado.gen.engine
     def on_message(self, msg):
@@ -44,9 +42,15 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
             if msg.kind == 'pmessage':
                 if(msg.body == 'lpush'):
                     key = msg.channel.split(':')[1]
-                    self.write_message('{"' + key + '":"' + str(self.client_read.lrange(key,0,0)[0]) +'"}')
-                if(msg.body == 'sadd' or msg.body == 'srem'):
-                     self.send_message("nodes list update") 
+                    self.write_message('{"' + key + '":"' + str(self.client_classic.lrange(key,0,0)[0]) +'"}')
+                if(msg.body == 'sadd'):
+                    old_list = self.nodes_list
+                    self.nodes_list = self.client_classic.smembers('nodes_list')
+                    self.send_add_nodes(list(self.nodes_list-old_list))
+                if (msg.body == 'srem'):
+                    old_list = self.nodes_list
+                    self.nodes_list = self.client_classic.smembers('nodes_list')
+                    self.send_rem_nodes(list(old_list-self.nodes_list))
             #~ Subscription confirmation
             elif msg.kind == 'psubscribe':
                 self.send_message("New subscription on key: " + msg.channel.split(':')[1])
@@ -63,7 +67,11 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
         else:
             wsdata = json.loads(msg)
             #~ Client subscribe a new key
-            if wsdata.has_key('subscribe'):
+            if wsdata.has_key('listStats'):
+                node = wsdata['listStats']
+                self.send_list_stats(node,self.client_classic.keys(node+'*'))                
+            #~ Client subscribe a new key
+            elif wsdata.has_key('subscribe'):
                 yield tornado.gen.Task(self.client_pubsub.psubscribe, '__key*__:'+wsdata['subscribe'])
             #~ Client unsubscribe a key
             elif wsdata.has_key('unsubscribe'):
@@ -71,6 +79,18 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
         
     def send_message(self, msg):
         self.send_value("_msg",msg)
+                
+    def send_list_stats(self, node, listStats):
+        self.write_message('{ "_nodes_stats" : { "'+node+'" : ' + json.dumps(list(listStats)) + '}}')
+        
+    def send_add_nodes(self, node):
+        self.write_message('{ "_nodes_add" : ' + json.dumps(list(node)) + '}')
+        
+    def send_rem_nodes(self, node):
+        self.write_message('{ "_nodes_rem" : ' + json.dumps(list(node)) + '}')
+        
+    def send_nodes_list(self, n_list):
+        self.write_message('{ "_nodes_list" : ' + json.dumps(list(n_list)) + '}')
         
     def send_value(self, key, value):
         self.write_message('{ "'+key+'" : "' + value + '"}')
@@ -83,7 +103,7 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
 
 application = tornado.web.Application([
     (r'/', MainHandler),
-    (r'/js/canvasjs.min.js', JSHandler),
+    (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': r"./static/"},),
     (r'/ws', MessageHandler),
 ])
 
