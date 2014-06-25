@@ -63,6 +63,23 @@ sudo apt-get install python-psutil
 ./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER
 ```
 
+### Errors messages
+
+#### 'module' object has no attribute 'net_io_counters'
+
+The PSUtils module is too old, install it manually
+```
+sudo apt-get remove  python-psutil
+sudo aptitude install python-dev
+wget https://github.com/giampaolo/psutil/archive/master.zip
+mv master.zip  psutils.zip
+unzip psutils.zip 
+cd psutil-master/
+sudo python setup.py install
+
+```
+
+
 
 ## Todo
 
