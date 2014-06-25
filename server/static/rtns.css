@@ -1,4 +1,4 @@
-.node {
+.node,.item{
 	background-color: lightgray; 
 	width: 90%;
 	margin: 5px;
@@ -6,9 +6,13 @@
     -moz-border-radius: 5px ;
 	border-radius: 5px;
 }
-.node a {
-    text-decoration: none;
-	color: #222222;
+
+h2{
+	background-color: darkgray;
+	color: white; 
+	padding: 5px;
+    -moz-border-radius: 10px ;
+	border-radius: 10px;
 }
 
 body{
@@ -18,25 +22,66 @@ body{
 #nodesList{
 	color: white;
     background-color: #111111;
-    float: right;
-    height: 100%;
-    padding: 20px 5px 5px 5px;
+    padding: 40px 5px 5px 5px;
     position: absolute;
     right: 0;
     top: 0;
+    bottom: 0;
     width: 200px;
+    z-index: 90;
 } 
 #nodesListButton{
 	color: white;
-    background-color: #222222;
-    float: right;
-    padding: 5px 10px 5px 10px;
+	text-align: right;
+    background-color: #444444;
+    padding: 5px;
     position: absolute;
-    right: 200px;
-    top: 50px;
-    width: 30px;
-    height: 40px;
-    -moz-border-radius: 10px 0px 0px 10px;
-	border-radius: 10px 0px 0px 10px;
+    right: 0px;
+    top: 0px;
+    height: 25px;
+    -moz-border-radius: 0px 0px 0px 10px;
+	border-radius: 0px 0px 0px 10px;
+    z-index: 99;
     }
     
+.chartContainer{
+	width: 100%;
+	display:inline-block;
+}
+
+.subChartContainer{
+	height: 300px;
+	width: 500px;
+	display:inline-block;
+}
+
+#statusNotConnected, #statusConnected{
+	text-align: right;
+    padding: 5px;
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    height: 25px;
+    -moz-border-radius: 10px 0px 0px 0px;
+	border-radius: 10px 0px 0px 0px;
+	width:150px;
+	text-align:center;
+	font-weight: bold;
+    }
+
+#statusNotConnected{
+	color: red;
+    background-color: #999999;
+    z-index: 98;
+	}
+
+#statusConnected{
+	color: green;
+    background-color: #444444;
+    z-index: 99;
+    }
+
+#startupMessage{
+	color: green;
+	font-size: 200%
+}

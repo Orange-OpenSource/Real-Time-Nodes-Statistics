@@ -3,6 +3,7 @@
 
 <head>
 	<link rel="stylesheet" type="text/css" href="/static/rtns.css" />
+	<script type="text/javascript" src="/static/canvasjs.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
     <title>Real Time Node Supervision</title>
     <script src="//code.jquery.com/jquery-1.10.2.js"></script>
@@ -10,39 +11,22 @@
 	<script type="text/javascript">
 	window.onload = function () {
 
+		$( "#statusConnected" ).hide();
+
 		// WS Server url
 		var ws_server_url = "{{ ws_server_url }}"
 
         // Chart max points
-        var chartSize = 150;
+        var chartSize = 120;
+        
+        // StatsAvailable
+        var statsAvailable = {};
         
 		// dataPoints
         var dataPoints = {};
-        //dataPoints["l-marvin"] = {}
-        //dataPoints["l-marvin"]["cpu"] = {};
-        //dataPoints["l-marvin"]["cpu"]["0"] = { 'name' : 'CPU 0', 'values' : [] };
-        //dataPoints["l-marvin"]["cpu"]["1"] = { 'name' : 'CPU 1', 'values' : [] };
-        //dataPoints["l-marvin"]["mem"] = {};
-        //dataPoints["l-marvin"]["mem"]["used"] = { 'name' : 'MEM', 'values' : [] };
 
 		var chart = [];
         var chartData = [];
-        
-        for (var node in dataPoints){
-            addChartNode(node);
-            chart[node]={};
-            chartData[node]= {};
-            for (var nodechart in dataPoints[node]){
-                chartData[node][nodechart] = [];
-                addChartInNode(node,nodechart);
-                for (var stat in dataPoints[node][nodechart]){
-                    chartDataAdd ( node, nodechart,
-                                dataPoints[node][nodechart][stat].name,
-                                dataPoints[node][nodechart][stat].values);
-                }
-                addChart(node, nodechart);
-            }
-        }
 
         function chartDataAdd ( node, nodechart, name, values){
             chartData[node][nodechart].push({ 
@@ -83,52 +67,49 @@
         open_websocket();
 
 		var ws;
-        function open_websocket(){
-            function show_message(message){
-                var el = document.createElement('div');
-                el.innerHTML = message;
-                document.body.appendChild(el);
-            }
-            
+        function open_websocket(){            
             ws = new WebSocket(ws_server_url);
             ws.onopen = function() {
-                show_message('Connected.');
-                for (var node in dataPoints){
-                    for (var nodechart in dataPoints[node]){
-                        for (var stat in dataPoints[node][nodechart]){
-                            console.log("subscribe: "+node+"_"+nodechart+"_"+stat)
-                            ws.send(JSON.stringify({subscribe: node+"_"+nodechart+"_"+stat}));
-                        }
-                    }
-                }
+                console.log('Connected.');
+				$( "#statusConnected" ).show('slow');
+				$( "#statusNotConnected" ).hide('slow');
             };
             ws.onmessage = function(event) {
                 wsmsg = JSON.parse(event.data);
                 //~ We got a message
                 if(wsmsg._msg){
-                    show_message(wsmsg._msg);
+                    console.log("Server said: "+wsmsg._msg);
                 //~ We got a nodes list
                 }else if(wsmsg._nodes_list){
-                    console.log("The actual nodes list is: "+wsmsg._nodes_list);
+                    console.log("Server said: "+"The actual nodes list is: "+wsmsg._nodes_list);
                     for ( nodeId in wsmsg._nodes_list ){
 						addNode(wsmsg._nodes_list[nodeId]);
 					}
                 //~ We got a stats list for a node
                 }else if(wsmsg._nodes_stats){
 					for ( var node in wsmsg._nodes_stats){
-						for ( var stat in wsmsg._nodes_stats[node]){
-							console.log(wsmsg._nodes_stats[node][stat]);
+						$.each(wsmsg._nodes_stats[node].sort(),function(index,value) {
+							vs = value.split("_");
+							if(!(node in statsAvailable)){ statsAvailable[node] = {}; }
+							if(!(vs[1] in statsAvailable[node])){ statsAvailable[node][vs[1]] = []; }
+							if(!(statsAvailable[node][vs[1]].indexOf(vs[2])>-1)){
+								statsAvailable[node][vs[1]].push(vs[2]); }
+						});
+						for (var item in statsAvailable[node]){
+							addChartNodeItem(node,item);
 						}
 					}
                 //~ We got a node added
                 }else if(wsmsg._nodes_add){
-					$.notify("Node "+node+" is added", "info");
+					$.notify("Server said: "+"Node "+node+" is added", "info");
 					addNode(wsmsg._nodes_add);
                 //~ We got a nodes remove
                 }else if(wsmsg._nodes_rem){
-					$.notify("Node "+wsmsg._nodes_rem+" is removed", "info");
+					$.notify("Server said: "+"Node "+wsmsg._nodes_rem+" is removed", "info");
+					removeNode(wsmsg._nodes_add);
                 //~ We got a new value
                 }else{
+					//~ console.log(wsmsg);
                     key = Object.keys(wsmsg)[0];
                     [node,nodechart,stat] = key.split('_');
                     val = wsmsg[key].split('/');
@@ -143,7 +124,9 @@
                 }
             };
             ws.onclose = function() {
-                show_message("Closed.");
+                $.notify("Server is closed.",{'className': 'error', 'autoHideDelay': 60000});
+				$( "#statusConnected" ).hide('slow');
+				$( "#statusNotConnected" ).show('slow');
             };
         }
         
@@ -154,47 +137,109 @@
         
         function addNode ( node ){
             $( "#nodesList" ).append( 	'<div id="nodeList-'+node+'" class="node">'+node+"</div>" );
-			$('#nodeList-'+node).click(function(){
+			$( '#nodeList-'+node).click(function(){
 					if(dataPoints[node] === undefined){
+						$( "#startupMessage" ).hide();
 						addChartNode(node);
 						dataPoints[node] = {};
+						chart[node]={};
+						chartData[node]= {};
 						askNodeStats(node);
 						$('#nodeList-'+node).css('font-weight', 'bold');
 						$.notify("Node "+node+" added to supervision", "info");
 					}else{
 						removeChartNode(node);
 						delete dataPoints[node];
+						if (Object.keys(dataPoints).length == 0){
+							$( "#startupMessage" ).show();}
+						delete chart[node];
+						delete chartData[node];
 						$('#nodeList-'+node).css('font-weight', 'normal');
 						$.notify("Node "+node+" remove from supervision", "info");
 					}
 				});
 			}
-        
+			
+        function removeNode( node ){
+            $( '#nodeList-'+node ).remove();}
+			
         function addChartNode ( node ){
             $( "#chartContainer" ).append( 	'<div id="chartTopContainer-'+node+'">'+
-												'<h2>'+node+'</h2>'+
+												'<h2 id="chartTitleContainer-'+node+'">'+node+'</h2>'+
 												'<div id="chartStats-'+node+'"></div>'+
-												'<div id="chartContainer-'+node+'" style="height: 300px; width: 100%; display:inline-block;"></div>'+
+												'<div id="chartContainer-'+node+'" class="chartContainer"></div>'+
 											'</div>'
-											);}
+											);
+			$( "#chartTitleContainer-"+node ).click(function(){
+					$( "#chartStats-"+node ).toggle('slow');
+					$( "#chartContainer-"+node ).toggle('slow');
+			});
+		}
         
+        function addChartNodeItem ( node, item ){
+            $( "#chartStats-"+node ).append( 	'<span id="chartStats-'+node+'-'+item+'" class="item">'+
+												item+
+											'</span>'
+											);
+			$('#chartStats-'+node+'-'+item).click(function(){
+					if(dataPoints[node][item] === undefined){
+						chartData[node][item] = [];
+						dataPoints[node][item]={};
+						addChartInNode(node,item);
+						$.each(statsAvailable[node][item],function(index,stat) {
+							dataPoints[node][item][stat] = { 'name' : item+'_'+stat, 'values' : [] };
+							console.log("subscribe: "+node+"_"+item+"_"+stat)
+							ws.send(JSON.stringify({subscribe: node+"_"+item+"_"+stat}));
+							chartDataAdd ( node, item,
+										dataPoints[node][item][stat].name,
+										dataPoints[node][item][stat].values);
+						});
+						addChart(node, item);
+						$('#chartStats-'+node+'-'+item).css('font-weight', 'bold');
+						$.notify("Item "+item+" added to "+node, "info");
+					}else{
+						console.log(dataPoints[node][item]);
+						for (var stat in dataPoints[node][item]){
+							console.log("Unsubscribe: "+node+"_"+item+"_"+stat)
+							ws.send(JSON.stringify({unsubscribe: node+"_"+item+"_"+stat}));
+						}
+						delete dataPoints[node][item];
+						delete chartData[node][item];
+						$( '#chartContainer-'+node+'-'+item ).remove();
+						$('#chartStats-'+node+'-'+item).css('font-weight', 'normal');
+						$.notify("Item "+item+" removed to "+node, "info");
+					}
+				});
+			}   
+											
         function removeChartNode ( node ){
             $( "#chartTopContainer-"+node ).remove();}
         
         function addChartInNode ( node, chart ){
-            $( "#chartContainer-"+node ).append( '<div id="chartContainer-'+node+'-'+chart+'" style="height: 300px; width: 50%; display:inline-block;"></div>' );}
-            
+            $( "#chartContainer-"+node ).append( '<div id="chartContainer-'+node+'-'+chart+'" class="subChartContainer"></div>' );}
+        
+        $( "#nodesListButton" ).click(function(){
+			if($("#nodesList").is(":visible")){
+				$("#nodesList").hide('slow');
+				$("#nodesListButton").html('&darr; servers list &darr;');
+			}else{
+				$("#nodesList").show('slow');
+				$("#nodesListButton").html('&uarr; servers list &uarr;');
+			}
+		});
         
 	}
 	</script>
 </head>
 <body>
     <h1>Real Time Node Supervision</h1>
+	<div id="startupMessage">Please choose a node to supervise &rArr;</div>
+	<div id="nodesListButton">&uarr; servers list &uarr; </div>
 	<div id="nodesList">
-		<div id="nodesListButton">&gt;</div>
 		</div>
 	<div id="chartContainer"></div>
-    <h2>Messages</h2>
-    <hr/>
+	<div id="statusNotConnected">Not connected</div>
+	<div id="statusConnected">Connected</div>
+	</div>
 </body>
 </html>

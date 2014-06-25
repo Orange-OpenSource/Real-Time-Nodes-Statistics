@@ -19,6 +19,8 @@ send_net = 1
 ##
 hostname = socket.gethostname()
 
+
+t = str(int(time.time()*1000))
 ##
 # Check argument and connect to REDIS
 ##
@@ -65,7 +67,7 @@ def get_send_cpu_or_sleep():
 
 # Send Mem data
 if send_mem:
-    print hostname+"mem_used"
+    print hostname+"_mem_used"
 
 def get_send_mem():
     if send_mem:
@@ -97,7 +99,6 @@ def signal_handler(signal, frame):
         sys.exit(0)
 signal.signal(signal.SIGINT, signal_handler)
 print('\nPress Ctrl+C to exit')
-signal.pause()
 
 ##
 # Sending loop
