@@ -79,9 +79,7 @@ sudo python setup.py install
 
 ```
 
-
-
-## Todo
-
-* Add on JS client the possibility to select nodes and stats from a dynamic list
+Interface
+------------
+To access the interface go to the link written in the server output. For example http://127.0.0.1:8888
 
