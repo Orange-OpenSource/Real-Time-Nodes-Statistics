@@ -9,20 +9,26 @@ import tornado.gen
 import json
 import tornadoredis
 import redis
+import socket
+import os
 
 c = tornadoredis.Client()
 c.connect()
+hostname=socket.getfqdn()
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        url = "ws://%s:8888/ws" % "127.0.0.1"
+        url = "ws://%s/ws" % self.request.host
+        #~ url = "ws://%s/ws" % "127.0.0.1:8888"
+        #~ url = "ws://%s/ws" % "10.193.5.79"
         self.render("template.html", ws_server_url=url)
            
 class MessageHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super(MessageHandler, self).__init__(*args, **kwargs)
+        #~ print self.request
         self.listen()
-
+    
     @tornado.gen.engine
     def listen(self):
         self.client_pubsub = tornadoredis.Client()
