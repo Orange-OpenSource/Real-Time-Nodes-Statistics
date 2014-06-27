@@ -1,4 +1,19 @@
 #!/usr/bin/python
+#~ 
+#~ Copyright (C) 2014 Orange
+#~ 
+#~ This software is distributed under the terms and conditions of the 'Apache-2.0'
+#~ license which can be found in the file 'LICENSE.txt' in this package distribution 
+#~ or at 'http://www.apache.org/licenses/LICENSE-2.0'. 
+#~ 
+
+#~ 
+#~ Real Time Node Supervision 
+#~ 
+#~ Module name: Real Time Node Supervision - Server
+#~ Version:     1.0
+#~ Created:     2014-06-27 by David Blaisonneau
+#~ 
 
 from __future__ import print_function
 import tornado.httpserver

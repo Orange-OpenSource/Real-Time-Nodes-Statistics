@@ -11,6 +11,8 @@ The software is based on:
 * a python web server, compatible with websocket
 * a JS web client
 
+![alt tag](https://raw.githubusercontent.com/Orange-OpenSource/Real-Time-Nodes-Statistics/master/archi.svg)
+
 Server
 ------------
 
@@ -40,7 +42,6 @@ Redis is the database that will contains temporary stats, but it is only opened 
 To open it to the public interface, edit /etc/redis/redis.conf and set
 ```
 bind 0.0.0.0
-requirepass *1*strongPassword*1*
 
 ```
 If your client are in a secured network, you could not add the requirepass command. If not, do not forget
@@ -49,7 +50,7 @@ to add it to you client and server command line
 ### Running the server
 
 ```
-./rtns-server.py  [REDIS_PASSWORD]
+./rtns-server.py
 ```
 
 Agents
@@ -72,7 +73,7 @@ sudo apt-get install python-psutil
 ### Running the agent
 
 ```
-./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER [REDIS_PASSWORD]
+./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER
 ```
 
 ### Errors messages
