@@ -34,10 +34,22 @@ cd ..
 sudo apt-get install python-tornado redis-server
 
 ```
-### Running the agent
+### Configuring Redis
+
+Redis is the database that will contains temporary stats, but it is only opened on localhost by default.
+To open it to the public interface, edit /etc/redis/redis.conf and set
+```
+bind 0.0.0.0
+requirepass *1*strongPassword*1*
 
 ```
-./rtns-server.py
+If your client are in a secured network, you could not add the requirepass command. If not, do not forget
+to add it to you client and server command line
+
+### Running the server
+
+```
+./rtns-server.py  [REDIS_PASSWORD]
 ```
 
 Agents
@@ -60,7 +72,7 @@ sudo apt-get install python-psutil
 ### Running the agent
 
 ```
-./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER
+./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER [REDIS_PASSWORD]
 ```
 
 ### Errors messages

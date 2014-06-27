@@ -6,15 +6,17 @@
 	<script type="text/javascript" src="/static/canvasjs.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
     <title>Real Time Node Supervision</title>
-    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-    <script src="//notifyjs.com/dist/notify-combined.min.js"></script>
+    <script src="/static/jquery-1.10.2.js"></script>
+    <script src="/static/notify-combined.min.js"></script>
 	<script type="text/javascript">
 	window.onload = function () {
 
 		$( "#statusConnected" ).hide();
+		$( "#connection" ).hide();
 
 		// WS Server url
 		var ws_server_url = "{{ ws_server_url }}"
+		var ws_opened_once = false;
 
         // Chart max points
         var chartSize = 120;
@@ -71,8 +73,9 @@
             ws = new WebSocket(ws_server_url);
             ws.onopen = function() {
                 console.log('Connected.');
-				$( "#statusConnected" ).show('slow');
-				$( "#statusNotConnected" ).hide('slow');
+                ws_opened_once = true;
+				$( "#statusConnected" ).show('slow');				
+				$( "#statusNotConnected" ).hide('slow');				
             };
             ws.onmessage = function(event) {
                 wsmsg = JSON.parse(event.data);
@@ -100,13 +103,15 @@
 						}
 					}
                 //~ We got a node added
-                }else if(wsmsg._nodes_add){
-					$.notify("Server said: "+"Node "+node+" is added", "info");
-					addNode(wsmsg._nodes_add);
+                }else if(wsmsg._node_add){
+					$.notify("Node "+wsmsg._node_add+" is added", "info");
+					console.log("Server said: node "+wsmsg._node_add+" is added", "info");
+					addNode(wsmsg._node_add);
                 //~ We got a nodes remove
-                }else if(wsmsg._nodes_rem){
-					$.notify("Server said: "+"Node "+wsmsg._nodes_rem+" is removed", "info");
-					removeNode(wsmsg._nodes_add);
+                }else if(wsmsg._node_rem){
+					$.notify("Node "+wsmsg._node_rem+" is removed", "warn");
+					console.log("Server said: node "+wsmsg._node_rem+" is removed", "info");
+					removeNode(wsmsg._node_rem);
                 //~ We got a new value
                 }else{
 					//~ console.log(wsmsg);
@@ -126,7 +131,10 @@
             ws.onclose = function() {
                 $.notify("Server is closed.",{'className': 'error', 'autoHideDelay': 60000});
 				$( "#statusConnected" ).hide('slow');
+				$( "#startupMessage" ).hide('slow');
 				$( "#statusNotConnected" ).show('slow');
+				if(!ws_opened_once){
+					$( "#connection" ).show('slow');}
             };
         }
         
@@ -161,7 +169,7 @@
 			}
 			
         function removeNode( node ){
-            $( '#nodeList-'+node ).remove();}
+			$( '#nodeList-'+node ).remove();}
 			
         function addChartNode ( node ){
             $( "#chartContainer" ).append( 	'<div id="chartTopContainer-'+node+'">'+
@@ -217,16 +225,15 @@
         
         function addChartInNode ( node, chart ){
             $( "#chartContainer-"+node ).append( '<div id="chartContainer-'+node+'-'+chart+'" class="subChartContainer"></div>' );}
-        
-        $( "#nodesListButton" ).click(function(){
-			if($("#nodesList").is(":visible")){
-				$("#nodesList").hide('slow');
-				$("#nodesListButton").html('&darr; servers list &darr;');
-			}else{
-				$("#nodesList").show('slow');
-				$("#nodesListButton").html('&uarr; servers list &uarr;');
-			}
-		});
+			$( "#nodesListButton" ).click(function(){
+				if($("#nodesList").is(":visible")){
+					$("#nodesList").hide('slow');
+					$("#nodesListButton").html('&darr; servers list &darr;');
+				}else{
+					$("#nodesList").show('slow');
+					$("#nodesListButton").html('&uarr; servers list &uarr;');
+				}
+			});
         
 	}
 	</script>
@@ -240,6 +247,10 @@
 	<div id="chartContainer"></div>
 	<div id="statusNotConnected">Not connected</div>
 	<div id="statusConnected">Connected</div>
+	<div id="connection">
+		Sorry,<br/><br/>Your browser can not reach the websocket server at:<br/>{{ ws_server_url }}.<br/>
+		You probably have an incompatible browser or a proxy incompatible with websocket.
+		</div>
 	</div>
 </body>
 </html>

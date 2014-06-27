@@ -23,7 +23,7 @@ body{
 	color: white;
     background-color: #111111;
     padding: 40px 5px 5px 5px;
-    position: absolute;
+    position: fixed;
     right: 0;
     top: 0;
     bottom: 0;
@@ -35,7 +35,7 @@ body{
 	text-align: right;
     background-color: #444444;
     padding: 5px;
-    position: absolute;
+    position: fixed;
     right: 0px;
     top: 0px;
     height: 25px;
@@ -58,7 +58,7 @@ body{
 #statusNotConnected, #statusConnected{
 	text-align: right;
     padding: 5px;
-    position: absolute;
+    position: fixed;
     right: 0px;
     bottom: 0px;
     height: 25px;
@@ -84,4 +84,19 @@ body{
 #startupMessage{
 	color: green;
 	font-size: 200%
+}
+
+#connection{
+	margin: 2px;
+	padding: 50px;
+    -moz-border-radius: 50px;
+	border-radius: 50px;
+	color: white;
+    background-color: #111111;
+    position: fixed;
+    left:25%;
+    right:calc(200px + 25%);
+    top:25%;
+    text-align: center;
+	color: white;
 }

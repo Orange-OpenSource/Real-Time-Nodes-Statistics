@@ -18,19 +18,22 @@ send_net = 1
 # Prepare hostname
 ##
 hostname = socket.gethostname()
-
-
 t = str(int(time.time()*1000))
+
 ##
 # Check argument and connect to REDIS
 ##
 if len(sys.argv)==2:
+    rtns_ip = sys.argv[1]
+    rtns_password = ""
+elif len(sys.argv)==3:
 	rtns_ip = sys.argv[1]
+	rtns_password = sys.argv[2]
 else:
-	print "Usage: ./rtns-agent-redis.py RTNS_SERVER_IP\n"
+	print "Usage: ./rtns-agent-redis.py RTNS_SERVER_IP [PASSWORD]\n"
 	raise SystemExit
+#~ r = redis.Redis({'host':rtns_ip, 'password':rtns_password})
 r = redis.Redis(rtns_ip)
-
 
 ##
 # Register in nodes_list
