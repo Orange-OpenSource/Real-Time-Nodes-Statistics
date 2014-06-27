@@ -11,7 +11,7 @@ The software is based on:
 * a python web server, compatible with websocket
 * a JS web client
 
-![alt tag](https://raw.githubusercontent.com/Orange-OpenSource/Real-Time-Nodes-Statistics/master/archi.svg)
+![alt tag](https://raw.githubusercontent.com/Orange-OpenSource/Real-Time-Nodes-Statistics/master/doc/archi.png)
 
 Server
 ------------
