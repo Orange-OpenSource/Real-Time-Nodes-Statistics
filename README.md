@@ -13,6 +13,17 @@ The software is based on:
 
 ![alt tag](https://raw.githubusercontent.com/Orange-OpenSource/Real-Time-Nodes-Statistics/master/doc/archi.png)
 
+Pre-Install
+------------
+
+### Download Real-Time-Nodes-Statistics
+On Debian like sytems installation:
+```
+sudo aptitude install git
+git clone https://github.com/Orange-OpenSource/Real-Time-Nodes-Statistics.git
+```
+
+
 Server
 ------------
 
@@ -22,6 +33,7 @@ The RTNS server needs 4 dependencies: redis server and 3 python libraries for to
 
 On Debian like sytems installation, installation steps are:
 ```
+cd Real-Time-Nodes-Statistics/server/
 git clone https://github.com/leporo/tornado-redis.git
 cd tornado-redis
 sudo python setup.py install
@@ -50,7 +62,7 @@ to add it to you client and server command line
 ### Running the server
 
 ```
-./rtns-server.py
+./rtns-server.py &
 ```
 
 Agents
@@ -62,18 +74,19 @@ The RTNS agent needs two libraries. Redis > 2.8 and PSUtils >= 1.2.1
 
 On Debian like sytems installation, installation steps are:
 ```
+cd Real-Time-Nodes-Statistics/agent/
 wget https://pypi.python.org/packages/source/r/redis/redis-2.10.1.tar.gz
 tar zxf redis-2.10.1.tar.gz
 cd redis-2.10.1
 sudo python setup.py install
-cd
+cd ..
 sudo apt-get install python-psutil
 ```
 
 ### Running the agent
 
 ```
-./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER
+./rtns-agent-redis.py IPADDRESS_OF_RTNS_SERVER &
 ```
 
 ### Errors messages
