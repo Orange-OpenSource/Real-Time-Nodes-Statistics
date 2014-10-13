@@ -49,7 +49,12 @@ class MainHandler(tornado.web.RequestHandler):
         url = "wss://%s/ws" % self.request.host
         my_logger.info("New connection from: "+self.request.remote_ip)
         self.render("template.html", ws_server_url=url)
-           
+class TestHandler(tornado.web.RequestHandler):
+    def get(self):
+        url = "wss://%s/ws" % self.request.host
+        my_logger.info("New connection from: "+self.request.remote_ip)
+        self.render("test.html", ws_server_url=url)
+            
 class MessageHandler(tornado.websocket.WebSocketHandler):
     def __init__(self, *args, **kwargs):
         super(MessageHandler, self).__init__(*args, **kwargs)
@@ -152,6 +157,7 @@ class MessageHandler(tornado.websocket.WebSocketHandler):
 
 application = tornado.web.Application([
     (r'/', MainHandler),
+    (r'/test', TestHandler),
     (r'/static/(.*)', tornado.web.StaticFileHandler, {'path': r"./static/"},),
     (r'/ws', MessageHandler),
 ])

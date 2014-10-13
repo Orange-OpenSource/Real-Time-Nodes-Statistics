@@ -2,11 +2,13 @@
 <html>
 
 <head>
+    <link rel="stylesheet" type="text/css" href="/static/jquery-ui-1.11.1.css">
 	<link rel="stylesheet" type="text/css" href="/static/rtns.css" />
-	<script type="text/javascript" src="/static/canvasjs.min.js"></script>
+	<script type="text/javascript" src="/static/canvasjs.1.5.0.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
     <title>Real Time Node Supervision</title>
     <script src="/static/jquery-1.10.2.js"></script>
+    <script src="/static/jquery-ui-1.11.1.js"></script>
     <script src="/static/notify-combined.min.js"></script>
 	<script type="text/javascript">
 	window.onload = function () {
@@ -19,7 +21,7 @@
 		var ws_opened_once = false;
 
         // Chart max points
-        var chartSize = 120;
+        var chartSize = 60;
         
         // StatsAvailable
         var statsAvailable = {};
@@ -43,23 +45,32 @@
         function addChart (node, nodechart){
             chart[node][nodechart] = new CanvasJS.Chart("chartContainer-"+node+"-"+nodechart,{
                 zoomEnabled: true,
+                height: 300,
                 title: {
-                    text: node + "(" + nodechart	+ ")"
+                    text: node + "(" + nodechart	+ ")",
+                    fontSize: 14,
                 },
                 toolTip: {
                     shared: true
-                    
                 },
                 legend: {
                     verticalAlign: "top",
                     horizontalAlign: "center",
-                                    fontSize: 14,
-                    fontWeight: "bold",
+                    fontSize: 12,
+                    fontWeight: "normal",
                     fontFamily: "calibri",
                     fontColor: "dimGrey"
                 },
+                axisX:{
+                    labelFontSize: 12,
+                    labelFontWeight: "normal",
+                    labelAutoFit: false,
+                }, 
                 axisY:{
-                    prefix: '%',
+                    prefix: '',
+                    labelFontSize: 12,
+                    labelFontWeight: "normal",
+                    labelAutoFit: false,
                     includeZero: true
                 }, 
                 data: chartData[node][nodechart],
@@ -174,7 +185,9 @@
         function addChartNode ( node ){
             $( "#chartContainer" ).append( 	'<div id="chartTopContainer-'+node+'">'+
 												'<h2 id="chartTitleContainer-'+node+'">'+node+'</h2>'+
-												'<div id="chartStats-'+node+'"></div>'+
+												'<div id="chartStats-'+node+'">'+
+                                                    '<ul id="chartStats-'+node+'-menu" class="menu"></ul>'+
+                                                '</div>'+
 												'<div id="chartContainer-'+node+'" class="chartContainer"></div>'+
 											'</div>'
 											);
@@ -185,56 +198,108 @@
 		}
         
         function addChartNodeItem ( node, item ){
-            $( "#chartStats-"+node ).append( 	'<span id="chartStats-'+node+'-'+item+'" class="item">'+
-												item+
-											'</span>'
+            $( "#chartStats-"+node+'-menu' ).append('<li id="chartStats-'+node+'-'+item+'">'+item+'</li>');
+			$('#chartStats-'+node+'-'+item).click(function(e){
+                if(e.target != this) return;
+                if(dataPoints[node][item] === undefined){
+                    chartData[node][item] = [];
+                    dataPoints[node][item]={};
+                    addChartInNode(node,item);
+                    
+                    $( "#chartStats-"+node+'-'+item ).append('<ul id="chartStats-'+node+'-'+item+'-list"></ul>');                        
+                    $.each(statsAvailable[node][item],function(index,stat) {
+                        addChartNodeItemStat(node,item,stat);
+                    });
+                    addChart(node, item);
+                    $('#chartStats-'+node+'-'+item).css('font-weight', 'bold');
+                    $.notify("Item "+item+" added to "+node, "info");
+                }else{
+                    console.log(dataPoints[node][item]);
+                    for (var stat in dataPoints[node][item]){
+                        console.log("Unsubscribe: "+node+"_"+item+"_"+stat)
+                        ws.send(JSON.stringify({unsubscribe: node+"_"+item+"_"+stat}));
+                    }
+                    delete dataPoints[node][item];
+                    delete chartData[node][item];
+                    $( '#chartStats-'+node+'-'+item+'-list' ).remove();
+                    $( '#chartContainer-'+node+'-'+item+'-cont' ).remove();
+                    $('#chartStats-'+node+'-'+item).css('font-weight', 'normal');
+                    $.notify("Item "+item+" removed to "+node, "info");
+                }
+            });
+            $('#chartStats-'+node+'-'+item).mouseenter(function(){
+                $( "#chartStats-"+node+'-'+item+'-list' ).show();
+            });
+            $('#chartStats-'+node+'-'+item).mouseleave(function(){
+                $( "#chartStats-"+node+'-'+item+'-list' ).hide();
+            });
+        }   
+            
+		function addChartNodeItemStat (	node, item, stat ){
+            $("#chartStats-"+node+"-"+item+"-list" ).append('<li id="chartStats-'+node+'-'+item+'-stat-'+stat+'" >'+
+												stat+
+											'</li>'
 											);
-			$('#chartStats-'+node+'-'+item).click(function(){
-					if(dataPoints[node][item] === undefined){
-						chartData[node][item] = [];
-						dataPoints[node][item]={};
-						addChartInNode(node,item);
-						$.each(statsAvailable[node][item],function(index,stat) {
-							dataPoints[node][item][stat] = { 'name' : item+'_'+stat, 'values' : [] };
-							console.log("subscribe: "+node+"_"+item+"_"+stat)
-							ws.send(JSON.stringify({subscribe: node+"_"+item+"_"+stat}));
-							chartDataAdd ( node, item,
-										dataPoints[node][item][stat].name,
-										dataPoints[node][item][stat].values);
-						});
-						addChart(node, item);
-						$('#chartStats-'+node+'-'+item).css('font-weight', 'bold');
-						$.notify("Item "+item+" added to "+node, "info");
-					}else{
-						console.log(dataPoints[node][item]);
-						for (var stat in dataPoints[node][item]){
-							console.log("Unsubscribe: "+node+"_"+item+"_"+stat)
-							ws.send(JSON.stringify({unsubscribe: node+"_"+item+"_"+stat}));
-						}
-						delete dataPoints[node][item];
-						delete chartData[node][item];
-						$( '#chartContainer-'+node+'-'+item ).remove();
-						$('#chartStats-'+node+'-'+item).css('font-weight', 'normal');
-						$.notify("Item "+item+" removed to "+node, "info");
-					}
-				});
-			}   
-											
+            $('#chartStats-'+node+'-'+item+'-stat-'+stat).click(function(){
+                
+                if(dataPoints[node][item][stat] === undefined){
+                    dataPoints[node][item][stat] = { 'name' : item+'_'+stat, 'values' : [] };
+                    console.log("subscribe: "+node+"_"+item+"_"+stat)
+                    ws.send(JSON.stringify({subscribe: node+"_"+item+"_"+stat}));
+                    chartDataAdd ( node, item,
+                                dataPoints[node][item][stat].name,
+                                dataPoints[node][item][stat].values);
+                    $('#chartStats-'+node+'-'+item+'-stat-'+stat).css('font-weight', 'bold');
+                    
+                }else{
+                    console.log("Unsubscribe: "+node+"_"+item+"_"+stat)
+                    ws.send(JSON.stringify({unsubscribe: node+"_"+item+"_"+stat}));
+                    $('#chartStats-'+node+'-'+item+'-stat-'+stat).css('font-weight', 'normal');
+                    delete dataPoints[node][item][stat];
+                }
+            });
+        }
+        
         function removeChartNode ( node ){
             $( "#chartTopContainer-"+node ).remove();}
         
-        function addChartInNode ( node, chart ){
-            $( "#chartContainer-"+node ).append( '<div id="chartContainer-'+node+'-'+chart+'" class="subChartContainer"></div>' );}
-			$( "#nodesListButton" ).click(function(){
-				if($("#nodesList").is(":visible")){
-					$("#nodesList").hide('slow');
-					$("#nodesListButton").html('&darr; servers list &darr;');
-				}else{
-					$("#nodesList").show('slow');
-					$("#nodesListButton").html('&uarr; servers list &uarr;');
-				}
-			});
+        function addChartInNode ( node, nodechart ){
+            $( "#chartContainer-"+node ).append( '<div id="chartContainer-'+node+'-'+nodechart+'-cont" class="subChartContainer">'+
+                                                    '<div id="chartContainer-'+node+'-'+nodechart+'"></div>'+
+                                                '</div>' );
+            $( '#chartContainer-'+node+'-'+nodechart+'-cont' ).resizable({
+                stop: function(e, ui) {
+                    delta_width=ui.size['width']-ui.originalSize['width'];
+                    delta_heigth=ui.size['height']-ui.originalSize['height'];
+                    chart[node][nodechart]['options']['width']+=delta_width;
+                    chart[node][nodechart]['options']['height']+=delta_heigth;
+                },});
+             $( '#chartContainer-'+node+'-'+nodechart+'-cont' ).draggable();
+        }
+            
+        $( "#nodesListButton" ).click(function(){
+            if($("#nodesList").is(":visible")){
+                $("#nodesList").hide('slow');
+                $("#nodesListButton").html('&darr; servers list &darr;');
+            }else{
+                $("#nodesList").show('slow');
+                $("#nodesListButton").html('&uarr; servers list &uarr;');
+            }
+        });
         
+        $( "#save" ).click(function(){
+            console.log(dataPoints);
+        });
+        $( "#clear" ).click(function(){
+            $.each(dataPoints ,function(node,value) {
+                $.each(dataPoints[node] ,function(nodechart,value) {
+                    $.each(dataPoints[node][nodechart] ,function(stat,value) {
+                        dataPoints[node][nodechart][stat] = { 'name' : nodechart+'_'+stat, 'values' : [] };;
+                    });
+                });
+            });
+        });
+            
 	}
 	</script>
 </head>
@@ -247,6 +312,10 @@
 	<div id="chartContainer"></div>
 	<div id="statusNotConnected">Not connected</div>
 	<div id="statusConnected">Connected</div>
+<!--
+	<div id="save">S</div>
+	<div id="clear">C</div>
+-->
 	<div id="connection">
 		Sorry,<br/><br/>Your browser can not reach the websocket server at:<br/>{{ ws_server_url }}.<br/>
 		You probably have an incompatible browser or a proxy incompatible with websocket.
