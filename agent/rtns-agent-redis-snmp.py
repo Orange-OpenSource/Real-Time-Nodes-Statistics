@@ -15,48 +15,54 @@
 #~ Created:     2014-06-27 by David Blaisonneau
 #~ 
 import pprint
+pp = pprint.PrettyPrinter(indent=4)
 import re
 import redis 
 import socket
 import time
-import sys
 import signal
+import sys
+import getopt
 
 sending_interval = 10 #in second
 history = 120
 send_cpu = 0 # No method for the moment
 send_mem = 0 # no method for the moment
 send_net = 1
-default_community =  "public"
+remote_server = ""
+remote_server_community =  "public"
 rtns_ip = "172.20.113.170"
 rtns_password = ""
-pp = pprint.PrettyPrinter(indent=4)
-
-list_only_net_idx = [
-        10052,
-        10054,
-        10122,
-        10124,
-    ]
+list_only_net_idx = []
 
 ##
 # Check arguments
 ##
 
-if len(sys.argv)==3:
-    remote_server = sys.argv[2]
-    remote_server_community = default_community
-elif len(sys.argv)==4:
-    remote_server = sys.argv[2]
-    remote_server_community = sys.argv[3]
-else:
-	print "Usage: ./rtns-agent-redis.py SNMP_NODE [SNMP_COMMUNITY]\n"
-	raise SystemExit
+try:
+    opts, args = getopt.getopt(sys.argv[2:],"hs:c:i:f:",["help","server=","community=","interval=","filter="])
+except getopt.GetoptError:
+    print 'Syntax: ./rtns-agent-snmp.py -s <serverip> [ -c <community> -i <interval> -f <sequence of interface id: idx1,idx2>]'
+    sys.exit(2)
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print 'Syntax: ./rtns-agent-snmp.py -s <serverip> [ -c <community> -i <interval> -f <sequence of interface id: idx1,idx2>]'
+        sys.exit()
+    elif opt in ("-s", "--server"):
+        remote_server = arg
+    elif opt in ("-i", "--interval"):
+        sending_interval = int(arg)
+    elif opt in ("-c", "--community"):
+        remote_server_community = arg
+    elif opt in ("-f", "--filter"):
+        list_only_net_idx = arg.split(",")
+
+if remote_server == "":
+    print "Server ip is required"
 
 ##
 # Prepare SNMP Client
 ##
-exit
 m = M(remote_server, remote_server_community, 2)
 
 load("IF-MIB")
